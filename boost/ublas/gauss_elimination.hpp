@@ -129,7 +129,7 @@ namespace boost{ namespace numeric{ namespace ublas{
 				row(m, k).swap(row(m, i_max));
 				
 				for(size_type i = k+1; i < size; i++){
-					BOOST_UBLAS_CHECK ( m(k, k) == 0, divide_by_zero() );
+					BOOST_UBLAS_CHECK ( m(k, k) != 0, divide_by_zero() );
 					for(size_type j = k+1; j < size; j++){
 						value_type coeff = m(i, k) / m(k, k);
 						m(i, j) = m(i, j) - m(k, j) * ( m(i, k) / m(k, k) );
