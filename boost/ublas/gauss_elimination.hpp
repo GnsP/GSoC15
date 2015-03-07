@@ -111,29 +111,36 @@ namespace boost{ namespace numeric{ namespace ublas{
 		typedef typename M::size_type size_type;
 		typedef typename M::value_type value_type;
 		typedef vector<value_type> vector_type;
-
-#if BOOST_UBLAS_TYPE_CHECK
-		matrix_type cm(m);
-		matrix_type l(identity_matrix<value_type>(size)); // somehow it works here !!!
-#endif
 		
 		size_type singular = 0;
 		size_type size1 = m.size1();
 		size_type size2 = m.size2();
 		size_type size = std::min (size1, size2);
 
+#if BOOST_UBLAS_TYPE_CHECK
+		matrix_type cm(m);
+		identity_matrix<value_type> dummy(size);
+		matrix_type l(dummy); // matrix_type l(identity_matrix<value_type>(size)); does not work
+#endif
+
 		for(size_type k=0; k<size-1; k++){
 			matrix_column<matrix_type> m_k(m, k);
 			size_type i_max = gauss_aux::gauss_pivot_argmax(m_k, k);
 			if( m(i_max, k) != value_type(0)){
 				row(m, k).swap(row(m, i_max));
-				
+#if BOOST_UBLAS_TYPE_CHECK
+				row(l, k).swap(row(l, i_max));
+#endif
 				for(size_type i = k+1; i < size; i++){
 					BOOST_UBLAS_CHECK ( m(k, k) != 0, divide_by_zero() );
-					for(size_type j = k+1; j < size; j++){
-						value_type coeff = m(i, k) / m(k, k);
-						m(i, j) = m(i, j) - m(k, j) * ( m(i, k) / m(k, k) );
-					}
+					value_type coeff = m(i, k) / m(k, k);
+#if BOOST_UBLAS_TYPE_CHECK
+					l(i, k) = coeff;
+#endif
+					matrix_row<M> m_i (row(m, i));
+					matrix_row<M> m_k (row(m, k));
+					project(m_i, range(k, size)) -= coeff * project(m_k, range(k, size));
+
 					m(i, k) = 0;
 				}
 			}
@@ -141,6 +148,12 @@ namespace boost{ namespace numeric{ namespace ublas{
 				singular = k+1;
 			}
 		}
+#if BOOST_UBLAS_TYPE_CHECK
+		BOOST_UBLAS_CHECK ( singular != 0 ||
+							detail::expression_type_check ( prod( triangular_adaptor<matrix_type, unit_lower> (l),
+																 triangular_adaptor<matrix_type, upper> (m) ),
+															cm), internal_logic());
+#endif
 		return singular;
 	}
 
