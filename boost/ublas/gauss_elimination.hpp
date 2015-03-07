@@ -103,7 +103,8 @@ namespace boost{ namespace numeric{ namespace ublas{
 	// gauss elimination with partial pivoting
 	// without permutation matrix
 	// remarks:
-	// relatively slow but numerically stable
+	// 1. relatively slow but numerically stable
+	// 2. the permutation matrix P is not used, hence type check PA = LU is not performed.
 
 	template<typename M>
 	typename M::size_type gaussian_elimination(M &m){
@@ -117,17 +118,60 @@ namespace boost{ namespace numeric{ namespace ublas{
 		size_type size2 = m.size2();
 		size_type size = std::min (size1, size2);
 
-#if BOOST_UBLAS_TYPE_CHECK
-		matrix_type cm(m);
-		identity_matrix<value_type> dummy(size);
-		matrix_type l(dummy); // matrix_type l(identity_matrix<value_type>(size)); does not work
-#endif
-
 		for(size_type k=0; k<size-1; k++){
 			matrix_column<matrix_type> m_k(m, k);
 			size_type i_max = gauss_aux::gauss_pivot_argmax(m_k, k);
 			if( m(i_max, k) != value_type(0)){
 				row(m, k).swap(row(m, i_max));
+				for(size_type i = k+1; i < size; i++){
+					BOOST_UBLAS_CHECK ( m(k, k) != 0, divide_by_zero() );
+					value_type coeff = m(i, k) / m(k, k);
+					matrix_row<M> m_i (row(m, i));
+					matrix_row<M> m_k (row(m, k));
+					project(m_i, range(k, size)) -= coeff * project(m_k, range(k, size));
+
+					m(i, k) = 0;
+				}
+			}
+			else if(singular == 0){
+				singular = k+1;
+			}
+		}
+		return singular;
+	}
+
+
+
+
+	// gauss elimination with partial pivoting
+	// with permutation matrix
+	// remarks:
+	// 1. reuses permutation_matrix class from lu.hpp
+	// 2. relatively slow but numerically more stable
+
+	template<typename M, typename PM>
+	typename M::size_type gaussian_elimination(M &m, PM &pm){
+		typedef M matrix_type;
+		typedef typename M::size_type size_type;
+		typedef typename M::value_type value_type;
+
+		size_type singular = 0;
+		size_type size1 = m.size1();
+		size_type size2 = m.size2();
+		size_type size = (std::min) (size1, size2);
+
+#if BOOST_UBLAS_TYPE_CHECK
+		matrix_type cm(m);
+		identity_matrix<value_type> dummy(size);
+		matrix_type l(dummy);
+#endif
+		
+		for(size_type k=0; k<size-1; k++){
+			matrix_column<matrix_type> m_k(m, k);
+			size_type i_max = gauss_aux::gauss_pivot_argmax(m_k, k);
+			if( m(i_max, k) != value_type(0)){
+				row(m, k).swap(row(m, i_max));
+				std::swap (pm(k), pm(i_max));
 #if BOOST_UBLAS_TYPE_CHECK
 				row(l, k).swap(row(l, i_max));
 #endif
@@ -149,6 +193,7 @@ namespace boost{ namespace numeric{ namespace ublas{
 			}
 		}
 #if BOOST_UBLAS_TYPE_CHECK
+		swap_rows(pm,cm);
 		BOOST_UBLAS_CHECK ( singular != 0 ||
 							detail::expression_type_check ( prod( triangular_adaptor<matrix_type, unit_lower> (l),
 																 triangular_adaptor<matrix_type, upper> (m) ),
@@ -156,9 +201,6 @@ namespace boost{ namespace numeric{ namespace ublas{
 #endif
 		return singular;
 	}
-
-
-
 
 
 
