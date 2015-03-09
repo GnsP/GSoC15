@@ -81,7 +81,7 @@ namespace boost{ namespace numeric{ namespace ublas{
 	// remarks:
 	// fast but numerically unstable
 	template<typename M, typename E>
-	typename M::size_type gaussian_elimination_no_pivot(M &mi, vector_expression<E> &e){
+	typename M::size_type gaussian_elimination_no_pivot(M &m, vector_expression<E> &e){
 		typedef M matrix_type;
 		typedef typename M::size_type size_type;
 		typedef typename M::value_type value_type;
@@ -92,7 +92,7 @@ namespace boost{ namespace numeric{ namespace ublas{
 		size_type size2 = m.size2();
 		size_type size = (std::min) (size1, size2);
 
-		BOOST_UBLAS_CHECK(e.size()==size1, bad_size());
+		BOOST_UBLAS_CHECK(size1 == e().size(), bad_size());
 
 #if BOOST_UBLAS_TYPE_CHECK
 		matrix_type cm(m);
@@ -114,7 +114,7 @@ namespace boost{ namespace numeric{ namespace ublas{
 #endif
 					matrix_row<M> m_j (row(m, j));
 					project(m_j, range(k, size)) -= coeff * project(m_k, range(k, size));
-					e(j) -= coeff * e(j);
+					e()(j) -= coeff * e()(j);
 				}
 			}
 			else if( singular == 0 ){
@@ -214,6 +214,7 @@ namespace boost{ namespace numeric{ namespace ublas{
 
 	template<typename M, typename E>
 	typename M::size_type gaussian_elimination(M &m, vector_expression<E> &e){
+		
 		typedef M matrix_type;
 		typedef typename M::size_type size_type;
 		typedef typename M::value_type value_type;
@@ -224,14 +225,14 @@ namespace boost{ namespace numeric{ namespace ublas{
 		size_type size2 = m.size2();
 		size_type size = std::min (size1, size2);
 
-		BOOST_UBLAS_CHECK(e.size()==size1, bad_size());
+		BOOST_UBLAS_CHECK(e().size()==size1, bad_size());
 
 		for(size_type k=0; k<size-1; k++){
 			matrix_column<matrix_type> m_k(m, k);
 			size_type i_max = gauss_aux::gauss_pivot_argmax(m_k, k);
 			if( m(i_max, k) != value_type(0)){
 				row(m, k).swap(row(m, i_max));
-				std::swap(e(k), e(i_max));
+				std::swap(e()(k), e()(i_max));
 				
 				BOOST_UBLAS_CHECK ( m(k, k) != 0, divide_by_zero() );
 				matrix_row<M> m_k (row(m, k));
@@ -240,7 +241,7 @@ namespace boost{ namespace numeric{ namespace ublas{
 					value_type coeff = m(i, k) / m(k, k);
 					matrix_row<M> m_i (row(m, i));
 					project(m_i, range(k, size)) -= coeff * project(m_k, range(k, size));
-					e(i) -= coeff * e(k);
+					e()(i) -= coeff * e()(k);
 
 					m(i, k) = 0;
 				}
@@ -339,7 +340,7 @@ namespace boost{ namespace numeric{ namespace ublas{
 		size_type size2 = m.size2();
 		size_type size = (std::min) (size1, size2);
 
-		BOOST_UBLAS_CHECK(e.size()==size1, bad_size());
+		BOOST_UBLAS_CHECK(e().size()==size1, bad_size());
 
 #if BOOST_UBLAS_TYPE_CHECK
 		matrix_type cm(m);
@@ -353,7 +354,7 @@ namespace boost{ namespace numeric{ namespace ublas{
 			if( m(i_max, k) != value_type(0)){
 				row(m, k).swap(row(m, i_max));
 				std::swap (pm(k), pm(i_max));
-				std::swap (e(k), e(i_max));
+				std::swap (e()(k), e()(i_max));
 #if BOOST_UBLAS_TYPE_CHECK
 				row(l, k).swap(row(l, i_max));
 #endif
@@ -367,7 +368,7 @@ namespace boost{ namespace numeric{ namespace ublas{
 #endif
 					matrix_row<M> m_i (row(m, i));
 					project(m_i, range(k, size)) -= coeff * project(m_k, range(k, size));
-					e(i) -= coeff * e(k);
+					e()(i) -= coeff * e()(k);
 					
 					m(i, k) = 0;
 				}
@@ -421,8 +422,8 @@ namespace boost{ namespace numeric{ namespace ublas{
 #endif
 		inplace_solve(m, e, upper_tag());
 #if BOOST_UBLAS_TYPE_CHECK
-		BOOST_UBLAS_CHECK (detail::expression_type_check (prod (triangular_adaptor<const_matrix_type, unit_lower> (m), 
-																e), v1), internal_logic ());
+		BOOST_UBLAS_CHECK (detail::expression_type_check (prod (triangular_adaptor<const_matrix_type, upper> (m), 
+																e()), v1), internal_logic ());
 #endif
 	}
 
@@ -437,7 +438,7 @@ namespace boost{ namespace numeric{ namespace ublas{
 		typedef typename M::size_type size_type;
 		typedef typename M::value_type value_type;
 		swap_rows(pm, m);
-		swap_rows(pm, e);
+		swap_rows(pm, e());
 
 		gauss_substitute(m, e);
 	}

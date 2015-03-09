@@ -10,7 +10,14 @@ int main(){
 		for(int j=0; j<n; j++)
 			std::cin>>mat(i, j);
 
-	gaussian_elimination(mat);
+	permutation_matrix<> pm(mat.size1());
+	gaussian_elimination(mat, pm);
+	swap_rows(pm, mat);
+	row(mat,1).swap(row(mat,2));
 	std::cout<<mat<<std::endl;
+	std::cout<<pm<<std::endl;
+	vector<double> v(n);
+	lu_substitute(mat, pm, v);
+	std::cout<<v<<std::endl;
 	return 0;
 }
