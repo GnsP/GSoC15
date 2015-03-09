@@ -147,7 +147,7 @@ namespace boost{ namespace numeric{ namespace ublas{
 		template<typename T>
 		BOOST_UBLAS_INLINE
 		bool compare_abs(const T &a, const T &b){
-			return std::abs(a) > std::abs(b);
+			return std::abs(a) < std::abs(b);
 		}
 
 		template<typename MC>
@@ -463,4 +463,3 @@ namespace boost{ namespace numeric{ namespace ublas{
 // nor the solution, just relax your mind, do whatever shit you wanted to do all
 // your life, get some >12hours of good sleep and put your faith in god (?), the
 // problem will solve itself. 
-

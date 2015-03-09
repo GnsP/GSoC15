@@ -17,8 +17,8 @@ int main(){
 //	permutation_matrix<> pm(mat.size1());
 	gaussian_elimination(mat, v);
 	//swap_rows(pm, mat);
-	row(mat,1).swap(row(mat,2));
-	std::swap(v(1),v(2));
+//	row(mat,1).swap(row(mat,2));
+//	std::swap(v(1),v(2));
 	std::cout<<mat<<std::endl;
 	std::cout<<v<<std::endl;
 	//std::cout<<pm<<std::endl;
