@@ -267,8 +267,8 @@ namespace boost{ namespace numeric{ namespace ublas{
 	// 1. reuses permutation_matrix class from lu.hpp
 	// 2. relatively slow but numerically more stable
 
-	template<typename M, typename PM>
-	typename M::size_type gaussian_elimination(M &m, PM &pm){
+	template<typename M, typename PMT, typename PMA>
+	typename M::size_type gaussian_elimination(M &m, permutation_matrix<PMT,PMA> &pm){
 		typedef M matrix_type;
 		typedef typename M::size_type size_type;
 		typedef typename M::value_type value_type;
@@ -328,8 +328,8 @@ namespace boost{ namespace numeric{ namespace ublas{
 	// for systems Ax=b 
 	// b is given as an arg to the function
 
-	template<typename M, typename PM, typename E>
-	typename M::size_type gaussian_elimination(M &m, PM &pm, vector_expression<E> &e){
+	template<typename M, typename PMT, typename PMA, typename E>
+	typename M::size_type gaussian_elimination(M &m, permutation_matrix<PMT,PMA> &pm, vector_expression<E> &e){
 		typedef M matrix_type;
 		typedef typename M::size_type size_type;
 		typedef typename M::value_type value_type;
@@ -446,6 +446,21 @@ namespace boost{ namespace numeric{ namespace ublas{
 
 	// other overloads of the solver are yet to be written
 
-}}}
+}}} // end of namespace boost::numeric::ublas
 
 #endif
+
+
+
+// ADDITIONAL NOTES:
+////////////////////
+//
+//
+// 1. Efficient Debugging Tip
+/////////////////////////////
+//
+// If you ever get stuck with some bug / error with no idea about the root cause
+// nor the solution, just relax your mind, do whatever shit you wanted to do all
+// your life, get some >12hours of good sleep and put your faith in god (?), the
+// problem will solve itself. 
+
