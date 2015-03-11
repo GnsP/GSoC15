@@ -173,7 +173,6 @@ namespace boost{ namespace numeric{ namespace ublas{
 	// without permutation matrix
 	// remarks:
 	// 1. relatively slow but numerically stable
-	// 2. the permutation matrix P is not used, hence type check PA = LU is not performed.
 
 
 	// Tested against scipy.linalg
