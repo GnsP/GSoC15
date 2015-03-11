@@ -26,6 +26,10 @@ namespace boost{ namespace numeric{ namespace ublas{
 	// gaussian elimination without pivoting
 	// remarks:
 	// fast but numerically unstable
+
+	// Clears only trivial cases and fails in almost everywhere. 
+	// Should not be used unless it's clearly visualizable that pivoting is not 
+	// necessary. 
 	template<typename M>
 	typename M::size_type gaussian_elimination_no_pivot(M &m){
 		typedef M matrix_type;
@@ -96,7 +100,7 @@ namespace boost{ namespace numeric{ namespace ublas{
 
 #if BOOST_UBLAS_TYPE_CHECK
 		matrix_type cm(m);
-		matrix_type l(size, size); // matrix_type l(identity_matrix <value_type> (size)); does not work here ??? why ??
+		matrix_type l(size, size);
 		l(size-1, size-1) = 1;
 #endif
 
@@ -171,6 +175,11 @@ namespace boost{ namespace numeric{ namespace ublas{
 	// 1. relatively slow but numerically stable
 	// 2. the permutation matrix P is not used, hence type check PA = LU is not performed.
 
+
+	// Tested against scipy.linalg
+	// Cleared all tests successfully
+	// Reasonably fast and working
+	// All known bugs fixed ready to be used
 	template<typename M>
 	typename M::size_type gaussian_elimination(M &m){
 		typedef M matrix_type;
@@ -182,17 +191,31 @@ namespace boost{ namespace numeric{ namespace ublas{
 		size_type size2 = m.size2();
 		size_type size = std::min (size1, size2);
 
+#if BOOST_UBLAS_TYPE_CHECK
+		matrix_type cm(m);
+		permutation_matrix<> pm(size);
+		matrix_type l(size, size);
+		l(size-1, size-1) = 1;
+#endif
+
 		for(size_type k=0; k<size-1; k++){
 			matrix_column<matrix_type> m_k(m, k);
 			size_type i_max = gauss_aux::gauss_pivot_argmax(m_k, k);
 			if( m(i_max, k) != value_type(0)){
 				row(m, k).swap(row(m, i_max));
+#if BOOST_UBLAS_TYPE_CHECK
+				row(l, k).swap(row(l, i_max));
+				std::swap (pm(k), pm(i_max));
+#endif
 				
 				BOOST_UBLAS_CHECK ( m(k, k) != 0, divide_by_zero() );
 				matrix_row<M> m_k (row(m, k));
 				
 				for(size_type i = k+1; i < size; i++){
 					value_type coeff = m(i, k) / m(k, k);
+#if BOOST_UBLAS_TYPE_CHECK
+					l(i, k) = coeff;
+#endif
 					matrix_row<M> m_i (row(m, i));
 					project(m_i, range(k, size)) -= coeff * project(m_k, range(k, size));
 
@@ -203,6 +226,13 @@ namespace boost{ namespace numeric{ namespace ublas{
 				singular = k+1;
 			}
 		}
+#if BOOST_UBLAS_TYPE_CHECK
+		swap_rows(pm,cm);
+		BOOST_UBLAS_CHECK ( singular == 0 ||
+							detail::expression_type_check ( prod( triangular_adaptor<matrix_type, unit_lower> (l),
+																 triangular_adaptor<matrix_type, upper> (m) ),
+															cm), internal_logic());
+#endif
 		return singular;
 	}
 
@@ -226,6 +256,12 @@ namespace boost{ namespace numeric{ namespace ublas{
 		size_type size = std::min (size1, size2);
 
 		BOOST_UBLAS_CHECK(e().size()==size1, bad_size());
+#if BOOST_UBLAS_TYPE_CHECK
+		matrix_type cm(m);
+		permutation_matrix<> pm(size);
+		matrix_type l(size, size);
+		l(size-1, size-1) = 1;
+#endif
 
 		for(size_type k=0; k<size-1; k++){
 			matrix_column<matrix_type> m_k(m, k);
@@ -233,12 +269,19 @@ namespace boost{ namespace numeric{ namespace ublas{
 			if( m(i_max, k) != value_type(0)){
 				row(m, k).swap(row(m, i_max));
 				std::swap(e()(k), e()(i_max));
+#if BOOST_UBLAS_TYPE_CHECK
+				row(l, k).swap(row(l, i_max));
+				std::swap (pm(k), pm(i_max));
+#endif
 				
 				BOOST_UBLAS_CHECK ( m(k, k) != 0, divide_by_zero() );
 				matrix_row<M> m_k (row(m, k));
 				
 				for(size_type i = k+1; i < size; i++){
 					value_type coeff = m(i, k) / m(k, k);
+#if BOOST_UBLAS_TYPE_CHECK
+					l(i, k) = coeff;
+#endif
 					matrix_row<M> m_i (row(m, i));
 					project(m_i, range(k, size)) -= coeff * project(m_k, range(k, size));
 					e()(i) -= coeff * e()(k);
@@ -250,6 +293,13 @@ namespace boost{ namespace numeric{ namespace ublas{
 				singular = k+1;
 			}
 		}
+#if BOOST_UBLAS_TYPE_CHECK
+		swap_rows(pm,cm);
+		BOOST_UBLAS_CHECK ( singular == 0 ||
+							detail::expression_type_check ( prod( triangular_adaptor<matrix_type, unit_lower> (l),
+																 triangular_adaptor<matrix_type, upper> (m) ),
+															cm), internal_logic());
+#endif
 		return singular;
 	}
 
@@ -267,6 +317,11 @@ namespace boost{ namespace numeric{ namespace ublas{
 	// 1. reuses permutation_matrix class from lu.hpp
 	// 2. relatively slow but numerically more stable
 
+
+	// tested against scipy.linalg
+	// All tests passed successfully
+	// All known bugs fixed
+	// Reasonably fast and ready to be used
 	template<typename M, typename PMT, typename PMA>
 	typename M::size_type gaussian_elimination(M &m, permutation_matrix<PMT,PMA> &pm){
 		typedef M matrix_type;
@@ -411,6 +466,11 @@ namespace boost{ namespace numeric{ namespace ublas{
 
 	// Backsubstitution functions (Solvers)
 
+	// tested against scipy.linalg solve
+	// all tests passed successfully
+	// it works but untill now no bugs found, which is unnatural and highly 
+	// disheartening, hence I think more testing is necessary.
+
 	template<typename M, typename E>
 	void gauss_substitute(const M &m, vector_expression<E> &e){
 		typedef const M const_matrix_type;
@@ -463,3 +523,18 @@ namespace boost{ namespace numeric{ namespace ublas{
 // nor the solution, just relax your mind, do whatever shit you wanted to do all
 // your life, get some >12hours of good sleep and put your faith in god (?), the
 // problem will solve itself. 
+//
+//
+// 2. When no BUG is found
+//////////////////////////
+//
+// This situation is unearthly, unnatural and rare. It means you have definitely 
+// gone wrong somewhere. Only known way to fix it is to write more tests and try
+// to figure out how this situation came to existence in the first place.  Hence
+// just keep testing it untill the entire thing is deprecated.
+//
+//
+// 3. Situations inbetween
+//////////////////////////
+//
+// Life'z good and real.
