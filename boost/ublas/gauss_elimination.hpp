@@ -172,8 +172,6 @@ namespace boost{ namespace numeric{ namespace ublas{
 	// gauss elimination with partial pivoting
 	// without permutation matrix
 	// remarks:
-	// 1. relatively slow but numerically stable
-
 
 	// Tested against scipy.linalg
 	// Cleared all tests successfully
@@ -314,8 +312,6 @@ namespace boost{ namespace numeric{ namespace ublas{
 	// with permutation matrix
 	// remarks:
 	// 1. reuses permutation_matrix class from lu.hpp
-	// 2. relatively slow but numerically more stable
-
 
 	// tested against scipy.linalg
 	// All tests passed successfully
